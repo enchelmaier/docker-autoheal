@@ -136,7 +136,7 @@ generate_gotify_payload() {
  {
    "title": "Autoheal",
    "message": "$text",
-   "priority": "$GOTIFY_PROPROTY"
+   "priority": "$GOTIFY_PRIORITY"
  }
 EOF
 }
