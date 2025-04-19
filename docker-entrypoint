@@ -10,7 +10,8 @@ CURL_TIMEOUT=${CURL_TIMEOUT:-30}
 WEBHOOK_URL=${WEBHOOK_URL:-""}
 WEBHOOK_JSON_KEY=${WEBHOOK_JSON_KEY:-"text"}
 APPRISE_URL=${APPRISE_URL:-""}
-
+GOTIFY_URL=${GOTIFY_URL:-""}
+GOTIFY_PRIORITY=${GOTIFY_PRIORITY:-"1"}
 # only use unix domain socket if no TCP endpoint is defined
 case "${DOCKER_SOCK}" in
   "tcp://"*) HTTP_ENDPOINT="$(echo ${DOCKER_SOCK} | sed 's#tcp://#http://#')"
@@ -36,7 +37,11 @@ echo AUTOHEAL_START_PERIOD=${AUTOHEAL_START_PERIOD}
 echo AUTOHEAL_INTERVAL=${AUTOHEAL_INTERVAL}
 echo AUTOHEAL_DEFAULT_STOP_TIMEOUT=${AUTOHEAL_DEFAULT_STOP_TIMEOUT}
 echo AUTOHEAL_ONLY_MONITOR_RUNNING=${AUTOHEAL_ONLY_MONITOR_RUNNING}
-
+ if [ -n "$GOTIFY_URL" ]
+ then
+    echo GOTIFY_URL=${GOTIFY_URL}
+    echo GOTIFY_PRIORITY=${GOTIFY_PRIORITY}
+ fi
 docker_curl() {
   curl --max-time "${CURL_TIMEOUT}" --no-buffer -s \
   ${CA} ${CLIENT_KEY} ${CLIENT_CERT} \
@@ -89,6 +94,13 @@ notify_webhook() {
     # execute webhook requests as background process to prevent healer from blocking
     curl -s -X POST -H "Content-type: application/json" -d "$(generate_apprise_payload $text)"  $APPRISE_URL
   fi
+
+  if [ -n "$GOTIFY_URL" ]
+  then
+    # execute webhook requests as background process to prevent healer from blocking
+    curl -s -X POST -H "Content-type: application/json" -d "$(generate_gotify_payload $text)"  $GOTIFY_URL
+  fi
+
 }
 
 notify_post_restart_script() {
@@ -116,6 +128,16 @@ generate_apprise_payload() {
   "title":"Autoheal",
   "body":"$text"
 }
+EOF
+}
+generate_gotify_payload() {
+  local text="$@"
+  cat <<EOF
+ {
+   "title": "Autoheal",
+   "message": "$text",
+   "priority": "$GOTIFY_PROPROTY"
+ }
 EOF
 }
 
