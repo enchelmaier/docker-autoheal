@@ -12,6 +12,7 @@ WEBHOOK_JSON_KEY=${WEBHOOK_JSON_KEY:-"text"}
 APPRISE_URL=${APPRISE_URL:-""}
 GOTIFY_URL=${GOTIFY_URL:-""}
 GOTIFY_PRIORITY=${GOTIFY_PRIORITY:-"1"}
+GOTIFY_TOKEN=${GOTIFY_TOKEN:-""}
 # only use unix domain socket if no TCP endpoint is defined
 case "${DOCKER_SOCK}" in
   "tcp://"*) HTTP_ENDPOINT="$(echo ${DOCKER_SOCK} | sed 's#tcp://#http://#')"
@@ -41,6 +42,13 @@ echo AUTOHEAL_ONLY_MONITOR_RUNNING=${AUTOHEAL_ONLY_MONITOR_RUNNING}
  then
     echo GOTIFY_URL=${GOTIFY_URL}
     echo GOTIFY_PRIORITY=${GOTIFY_PRIORITY}
+      if [ -n "$GOTIFY_TOKEN" ]
+      then
+        GOTIFY_URL=$(printf "%s/message?token=%s" "$GOTIFY_URL" "$GOTIFY_TOKEN")
+      else
+	echo GOTIFY_TOKEN is required
+      fi
+
  fi
 docker_curl() {
   curl --max-time "${CURL_TIMEOUT}" --no-buffer -s \
@@ -136,7 +144,7 @@ generate_gotify_payload() {
  {
    "title": "Autoheal",
    "message": "$text",
-   "priority": "$GOTIFY_PRIORITY"
+   "priority": 1
  }
 EOF
 }
